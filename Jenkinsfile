@@ -2,6 +2,8 @@ pipeline{
     agent any 
     environment{
         VERSION = "${env.BUILD_ID}"
+        registry = "rabebnefzi/app"
+        registryCredential = 'dockerhub'
     }
     stages{
         stage("sonar quality check"){
@@ -23,16 +25,15 @@ pipeline{
         stage("docker build & docker push"){
             steps{
                 script{
-                    withCredentials([string(credentialsId: 'docker_pass', variable: 'docker_password')]) {
-                             sh '''
-                                docker build -t 192.168.205.14:8083/springapp:${VERSION} .
-                                docker login -u admin -p $docker_password 192.168.205.14:8083 
-                                docker push  192.168.205.14:8083/springapp:${VERSION}
-                                docker rmi 192.168.205.14:8083/springapp:${VERSION}
-                            '''
+
+                    sh'dockerImage = docker build -t registry:${VERSION} . '
+                    docker.withRegistry( '', registryCredential ) {
+                    dockerImage.push()
+                                }
+                    sh'docker rmi dockerImage'            
+                    
                     }
                 }
             }
         }
     }
-}
